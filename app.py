@@ -22,3 +22,16 @@ new_hours = st.slider("Hours studied", 0, 10, 1)
 if st.button("Predict"):
     prediction = model.predict([[new_hours]])
     st.success(f"🎯 Predicted Marks: {int(prediction[0])}")
+
+import matplotlib.pyplot as plt
+
+# Plot graph
+fig, ax = plt.subplots()
+ax.scatter(hours, marks)
+ax.plot(hours, model.predict(hours))
+
+ax.set_xlabel("Hours Studied")
+ax.set_ylabel("Marks")
+ax.set_title("Study Hours vs Marks")
+
+st.pyplot(fig)
