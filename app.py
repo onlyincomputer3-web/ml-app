@@ -2,7 +2,23 @@ from mpl_toolkits.mplot3d import Axes3D
 import streamlit as st
 import numpy as np
 from sklearn.linear_model import LinearRegression
-      
+import pandas as pd
+import matplotlib.pyplot as plt      
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+
+st.set_page_config(layout="wide")
+
+col1, col2 = st.columns([1, 2])
+
+with col1:
+    st.subheader("Input")
+
+with col2:
+    st.subheader("Output")
+
 st.markdown("""
 <style>
 /* Background */
@@ -75,6 +91,8 @@ model.fit(X, marks)
 # Predict button
 
 prediction = model.predict([[5, 7, 50]])
+
+
 
 st.markdown(f"""
 <div style="
@@ -168,3 +186,15 @@ else:
 
 with st.spinner("Analyzing your performance..."):
     prediction = model.predict([[new_hours, new_sleep, new_practice]])
+
+st.session_state.history.append(int(prediction[0]))
+
+data = pd.read_csv("data.csv")
+
+X = data[["hours", "sleep", "practice"]]
+y = data["marks"]
+
+model.fit(X, y)
+
+st.write("📜 Prediction History:")
+st.write(st.session_state.history)
