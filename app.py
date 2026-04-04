@@ -75,17 +75,32 @@ predicted_value = model.predict([[new_hours, new_sleep, new_practice]])
 ax.scatter(new_hours, new_sleep, predicted_value, s=200, c= 'red' )
 
 # Labels
-ax.set_xlabel("Study Hours 📚")
-ax.set_ylabel("Sleep Hours 😴")
-ax.set_zlabel("Marks 🎯")
+import plotly.express as px
 
-ax.set_title("3D Study Analysis")
+# Create data
+fig = px.scatter_3d(
+    x=hours,
+    y=sleep,
+    z=marks,
+    color=marks,
+    title="📊 Interactive 3D Study Analysis"
+)
 
-st.pyplot(fig)  
+# Add user prediction point
+
 prediction = model.predict([[new_hours, new_sleep, new_practice]])
 
-st.metric(label="Predicted Score", value=f"{int(prediction[0])}")
+fig.add_scatter3d(
+    x=[new_hours],
+    y=[new_sleep],
+    z=[prediction[0]],
+    mode='markers',
+    marker=dict(size=8, color='red'),
+    name="Your Prediction"
+)
 
+# Show in Streamlit
+st.plotly_chart(fig)
 if predicted_value[0] >= 85:
     st.success("🔥 Excellent performance!")
 elif predicted_value[0] >= 60:
