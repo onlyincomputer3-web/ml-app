@@ -67,12 +67,12 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 # Data points
-ax.scatter(hours, sleep, marks)
+ax.scatter(hours, sleep, marks, c = marks )
 
 # Highlight user input
 predicted_value = model.predict([[new_hours, new_sleep, new_practice]])
 
-ax.scatter(new_hours, new_sleep, predicted_value, s=200)
+ax.scatter(new_hours, new_sleep, predicted_value, s=200, c= 'red' )
 
 # Labels
 ax.set_xlabel("Study Hours 📚")
@@ -85,3 +85,10 @@ st.pyplot(fig)
 prediction = model.predict([[new_hours, new_sleep, new_practice]])
 
 st.metric(label="Predicted Score", value=f"{int(prediction[0])}")
+
+if predicted_value[0] >= 85:
+    st.success("🔥 Excellent performance!")
+elif predicted_value[0] >= 60:
+    st.info("👍 Good, keep improving!")
+else:
+    st.warning("📉 Need more effort!")
