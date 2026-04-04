@@ -2,20 +2,64 @@ from mpl_toolkits.mplot3d import Axes3D
 import streamlit as st
 import numpy as np
 from sklearn.linear_model import LinearRegression
-  
+      
+st.markdown("""
+<style>
+/* Background */
+.stApp {
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+
+/* Center everything */
+.block-container {
+    padding-top: 2rem;
+    text-align: center;
+}
+
+/* Glass box */
+.css-1d391kg {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+/* Buttons */
+.stButton>button {
+    background-color: #ff4b2b;
+    color: white;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+/* Slider */
+.stSlider {
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 st.set_page_config(page_title="AI Marks Predictor", page_icon="🤖", layout="centered")
 
-# Title
-st.markdown(
-    "<h1 style='text-align: center; color: #4CAF50;'>📚 AI Marks Predictor</h1>",
-    unsafe_allow_html=True
-)
+# Title:
 
-st.markdown(
-    "<p style='text-align: center;'>Predict your marks based on study hours 🚀</p>",
-    unsafe_allow_html=True
-)
-# Data
+st.markdown("""
+<h1 style='text-align: center; color: #00F5A0;'>
+🚀 AI Performance Predictor
+</h1>
+<p style='text-align: center; font-size:18px;'>
+Smart analysis of your study habits using Machine Learning 🤖
+</p>
+""", unsafe_allow_html=True)
+
+st.markdown("---")
+st.subheader("📊 Input Your Data")
+
+# Data:
+
 hours = np.array([1,2,3,4,5,6,7,8])
 sleep = np.array([5,6,6,7,7,8,8,9])
 practice = np.array([10,20,30,40,50,60,70,80])
@@ -29,6 +73,19 @@ model = LinearRegression()
 model.fit(X, marks)
 
 # Predict button
+
+prediction = model.predict([[5, 7, 50]])
+
+st.markdown(f"""
+<div style="
+    background: rgba(255,255,255,0.1);
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+">
+    <h2>🎯 Predicted Marks: {int(prediction[0])}</h2>
+</div>
+""", unsafe_allow_html=True)
 
 new_hours = st.number_input("Enter hours studied:", min_value=0.0, max_value=10.0, step=0.5)
 
@@ -107,3 +164,7 @@ elif predicted_value[0] >= 60:
     st.info("👍 Good, keep improving!")
 else:
     st.warning("📉 Need more effort!")
+
+
+with st.spinner("Analyzing your performance..."):
+    prediction = model.predict([[new_hours, new_sleep, new_practice]])
