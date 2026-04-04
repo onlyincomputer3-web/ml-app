@@ -1,130 +1,76 @@
-from mpl_toolkits.mplot3d import Axes3D
 import streamlit as st
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import pandas as pd
-import matplotlib.pyplot as plt      
+import plotly.express as px
 
-if "history" not in st.session_state:
-    st.session_state.history = []
+# ------------------- PAGE CONFIG -------------------
+st.set_page_config(page_title="AI Predictor", layout="wide")
 
+# ------------------- SESSION STATE -------------------
+if "users" not in st.session_state:
+    st.session_state.users = {}
 
-st.set_page_config(layout="wide")
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
-col1, col2 = st.columns([1, 2])
+if "current_user" not in st.session_state:
+    st.session_state.current_user = ""
 
-with col1:
-    st.subheader("Input")
+# ------------------- LOGIN / SIGNUP -------------------
+menu = ["Login", "Signup"]
+choice = st.sidebar.selectbox("Menu", menu)
 
-with col2:
-    st.subheader("Output")
+if choice == "Signup":
+    st.subheader("Create Account")
 
-st.markdown("""
-<style>
-/* Background */
-.stApp {
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    color: white;
-}
+    new_user = st.text_input("Username")
+    new_pass = st.text_input("Password", type="password")
 
-/* Center everything */
-.block-container {
-    padding-top: 2rem;
-    text-align: center;
-}
+    if st.button("Signup"):
+        if new_user in st.session_state.users:
+            st.error("User already exists!")
+        else:
+            st.session_state.users[new_user] = {
+                "password": new_pass,
+                "history": []
+            }
+            st.success("Account created!")
 
-/* Glass box */
-.css-1d391kg {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 20px;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-}
+elif choice == "Login":
+    st.subheader("Login")
 
-/* Buttons */
-.stButton>button {
-    background-color: #ff4b2b;
-    color: white;
-    border-radius: 10px;
-    padding: 10px;
-    font-size: 16px;
-}
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
 
-/* Slider */
-.stSlider {
-    color: white;
-}
-</style>
-""", unsafe_allow_html=True)
+    if st.button("Login"):
+        if username in st.session_state.users and st.session_state.users[username]["password"] == password:
+            st.session_state.logged_in = True
+            st.session_state.current_user = username
+            st.success("Logged in!")
+        else:
+            st.error("Invalid credentials")
 
+# ------------------- PROTECT APP -------------------
+if not st.session_state.logged_in:
+    st.warning("Please login to use the app")
+    st.stop()
 
-st.set_page_config(page_title="AI Marks Predictor", page_icon="🤖", layout="centered")
+# ------------------- MAIN APP -------------------
+st.success(f"Welcome {st.session_state.current_user} 👋")
 
-# Title:
+st.title("🚀 AI Performance Predictor")
 
-st.markdown("""
-<h1 style='text-align: center; color: #00F5A0;'>
-🚀 AI Performance Predictor
-</h1>
-<p style='text-align: center; font-size:18px;'>
-Smart analysis of your study habits using Machine Learning 🤖
-</p>
-""", unsafe_allow_html=True)
+# ------------------- DATA -------------------
+data = pd.read_csv("data.csv")
 
-st.markdown("---")
-st.subheader("📊 Input Your Data")
+X = data[["hours", "sleep", "practice"]]
+y = data["marks"]
 
-# Data:
-
-hours = np.array([1,2,3,4,5,6,7,8])
-sleep = np.array([5,6,6,7,7,8,8,9])
-practice = np.array([10,20,30,40,50,60,70,80])
-
-marks = np.array([35,45,55,65,72,78,85,92])
-
-X = np.column_stack((hours, sleep, practice))
-
-# Model
 model = LinearRegression()
-model.fit(X, marks)
+model.fit(X, y)
 
-# Predict button
-
-prediction = model.predict([[5, 7, 50]])
-
-
-
-st.markdown(f"""
-<div style="
-    background: rgba(255,255,255,0.1);
-    padding:20px;
-    border-radius:15px;
-    text-align:center;
-">
-    <h2>🎯 Predicted Marks: {int(prediction[0])}</h2>
-</div>
-""", unsafe_allow_html=True)
-
-new_hours = st.number_input("Enter hours studied:", min_value=0.0, max_value=10.0, step=0.5)
-
-new_sleep = st.number_input("Enter hours of sleep:", min_value=0.0, max_value=12.0, step=0.5)
-
-new_practice = st.number_input("Enter number of practice questions:", min_value=0, max_value=100, step=5)   
-
-
-if st.button("Predict"):
-    prediction = model.predict([[new_hours, new_sleep, new_practice]])
-
-    st.markdown(
-        f"<h2 style='text-align:center;'>🎯 {int(prediction[0])} Marks</h2>",
-        unsafe_allow_html=True
-    )
-   
-    st.metric("Predicted Score", int(prediction[0]))
-    st.progress(int(prediction[0]) / 100)
-
-
-
+# ------------------- INPUT -------------------
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -136,65 +82,52 @@ with col2:
 with col3:
     new_practice = st.slider("📝 Practice Questions", 0, 100, 10)
 
-import matplotlib.pyplot as plt
+# ------------------- PREDICTION -------------------
+if st.button("Predict"):
+    prediction = model.predict([[new_hours, new_sleep, new_practice]])
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+    # Save history safely
+    st.session_state.users[st.session_state.current_user]["history"].append(int(prediction[0]))
 
-# Data points
-ax.scatter(hours, sleep, marks, c = marks )
+    st.markdown(f"## 🎯 Predicted Marks: {int(prediction[0])}")
+    st.progress(int(prediction[0]) / 100)
 
-# Highlight user input
-predicted_value = model.predict([[new_hours, new_sleep, new_practice]])
+    # Feedback
+    if prediction[0] >= 85:
+        st.success("🔥 Excellent performance!")
+    elif prediction[0] >= 60:
+        st.info("👍 Good, keep improving!")
+    else:
+        st.warning("📉 Need more effort!")
 
-ax.scatter(new_hours, new_sleep, predicted_value, s=200, c= 'red' )
-
-# Labels
-import plotly.express as px
-
-# Create data
+# ------------------- GRAPH -------------------
 fig = px.scatter_3d(
-    x=hours,
-    y=sleep,
-    z=marks,
-    color=marks,
+    data,
+    x="hours",
+    y="sleep",
+    z="marks",
+    color="marks",
     title="📊 Interactive 3D Study Analysis"
 )
 
-# Add user prediction point
-
-prediction = model.predict([[new_hours, new_sleep, new_practice]])
+# Add prediction point
+pred = model.predict([[new_hours, new_sleep, new_practice]])
 
 fig.add_scatter3d(
     x=[new_hours],
     y=[new_sleep],
-    z=[prediction[0]],
+    z=[pred[0]],
     mode='markers',
     marker=dict(size=8, color='red'),
     name="Your Prediction"
 )
 
-# Show in Streamlit
 st.plotly_chart(fig)
-if predicted_value[0] >= 85:
-    st.success("🔥 Excellent performance!")
-elif predicted_value[0] >= 60:
-    st.info("👍 Good, keep improving!")
+
+# ------------------- HISTORY -------------------
+st.subheader("📜 Your Prediction History")
+
+if st.session_state.logged_in and st.session_state.current_user != "":
+    st.write(st.session_state.users[st.session_state.current_user]["history"])
 else:
-    st.warning("📉 Need more effort!")
-
-
-with st.spinner("Analyzing your performance..."):
-    prediction = model.predict([[new_hours, new_sleep, new_practice]])
-
-st.session_state.history.append(int(prediction[0]))
-
-data = pd.read_csv("data.csv")
-
-X = data[["hours", "sleep", "practice"]]
-y = data["marks"]
-
-model.fit(X, y)
-
-st.write("📜 Prediction History:")
-st.write(st.session_state.history)
+    st.write("No history yet. Please login.")
