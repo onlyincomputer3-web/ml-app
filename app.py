@@ -1,3 +1,4 @@
+from mpl_toolkits.mplot3d import Axes3D
 import streamlit as st
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -62,28 +63,25 @@ with col3:
 
 import matplotlib.pyplot as plt
 
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
 
-fig, ax = plt.subplots()
-
-# Scatter (data points)
-ax.scatter(hours, marks)
-
-# Prediction line
-ax.scatter(
-    new_hours,
-    model.predict([[new_hours, new_sleep, new_practice]]),
-    s=200
-)
+# Data points
+ax.scatter(hours, sleep, marks)
 
 # Highlight user input
-ax.scatter(new_hours, model.predict([[new_hours, new_sleep, new_practice]]), s=200)
+predicted_value = model.predict([[new_hours, new_sleep, new_practice]])
 
-ax.set_xlabel("Hours Studied")
-ax.set_ylabel("Marks")
-ax.set_title("📊 Study vs Marks")
+ax.scatter(new_hours, new_sleep, predicted_value, s=200)
 
-st.pyplot(fig)
-  
+# Labels
+ax.set_xlabel("Study Hours 📚")
+ax.set_ylabel("Sleep Hours 😴")
+ax.set_zlabel("Marks 🎯")
+
+ax.set_title("3D Study Analysis")
+
+st.pyplot(fig)  
 prediction = model.predict([[new_hours, new_sleep, new_practice]])
 
 st.metric(label="Predicted Score", value=f"{int(prediction[0])}")
