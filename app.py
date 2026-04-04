@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 
 # ------------------- PAGE CONFIG -------------------
-st.set_page_config(page_title="AI Predictor", layout="wide")
+st.set_page_config(page_title="AI Study Coach", layout="wide")
 
 # ------------------- SESSION STATE -------------------
 if "users" not in st.session_state:
@@ -99,6 +99,64 @@ if st.button("Predict"):
         st.info("👍 Good, keep improving!")
     else:
         st.warning("📉 Need more effort!")
+  
+prediction = model.predict([[new_hours, new_sleep, new_practice]])
+
+score = int(prediction[0])
+
+st.markdown(f"## 🎯 Predicted Marks: {score}")
+
+# AI Advice
+st.subheader("🧠 AI Study Advice")
+
+if score >= 85:
+    st.success("🔥 You're doing excellent! Keep your routine consistent.")
+elif score >= 60:
+    st.info("👍 You're doing good, but can improve.")
+
+    if new_hours < 6:
+        st.write("📚 Increase study hours")
+    if new_sleep < 7:
+        st.write("😴 Improve your sleep schedule")
+    if new_practice < 50:
+        st.write("📝 Practice more questions")
+
+else:
+    st.warning("📉 You need improvement!")
+
+    st.write("👉 Study at least 6-8 hours")
+    st.write("👉 Sleep properly (7-8 hours)")
+    st.write("👉 Practice daily questions")
+
+score = int(prediction[0])
+
+st.markdown(f"## 🎯 Predicted Marks: {score}")
+
+target = st.slider("🎯 Set your target marks", 50, 100, 80)
+
+if st.button("How to reach target"):
+    if score >= target:
+        st.success("You are already on track! 🎉")
+    else:
+        needed = target - score
+        st.warning(f"You need {needed} more marks")
+
+        st.write("💡 Suggested improvements:")
+        st.write("➡ Increase study hours by 1-2 hours")
+        st.write("➡ Add more practice questions")
+        st.write("➡ Maintain consistent sleep")
+
+if st.button("📅 Generate Study Plan"):
+    st.subheader("Your Daily Plan")
+
+    st.write("📚 Study: 6-8 hours")
+    st.write("😴 Sleep: 7-8 hours")
+    st.write("📝 Practice: 50+ questions")
+
+    st.write("⏰ Schedule:")
+    st.write("Morning: Study concepts")
+    st.write("Afternoon: Practice questions")
+    st.write("Evening: Revision")
 
 # ------------------- GRAPH -------------------
 fig = px.scatter_3d(
