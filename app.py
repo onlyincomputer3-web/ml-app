@@ -3,7 +3,22 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import pandas as pd
 import plotly.express as px
+import sqlite3
 
+
+
+conn = sqlite3.connect("users.db", check_same_thread=False)
+c = conn.cursor()
+
+# Create table
+c.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT,
+    password TEXT,
+    best_score INTEGER
+)
+""")
+conn.commit()
 # ------------------- PAGE CONFIG -------------------
 
 st.set_page_config(
@@ -33,15 +48,15 @@ if choice == "Signup":
     new_pass = st.text_input("Password", type="password")
 
     if st.button("Signup"):
-        if new_user in st.session_state.users:
+        c.execute("SELECT * FROM users WHERE username=?", (new_user,))
+        if c.fetchone():
             st.error("User already exists!")
         else:
-            st.session_state.users[new_user] = {
-    "password": new_pass,
-    "history": [],
-    "best_score": 0
-}
-        
+            c.execute(
+                "INSERT INTO users VALUES (?, ?, ?)",
+                (new_user, new_pass, 0)
+            )
+            conn.commit()
             st.success("Account created!")
 
 elif choice == "Login":
@@ -51,12 +66,21 @@ elif choice == "Login":
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-        if username in st.session_state.users and st.session_state.users[username]["password"] == password:
-            st.session_state.logged_in = True
-            st.session_state.current_user = username
-            st.success("Logged in!")
-        else:
-            st.error("Invalid credentials")
+    
+       c.execute(
+    
+    
+        "SELECT * FROM users WHERE username=? AND password=?",
+        (username, password)
+    )
+    user = c.fetchone()
+
+    if user:
+        st.session_state.logged_in = True
+        st.session_state.current_user = username
+        st.success("Logged in!")
+    else:
+        st.error("Invalid credentials")
 
 score = 75  # example score for demonstration
 
@@ -122,12 +146,25 @@ score = int(prediction[0])
 user = st.session_state.current_user
 
 # Update best score
-if score > st.session_state.users[user]["best_score"]:
-    st.session_state.users[user]["best_score"] = score
+user = st.session_state.current_user
 
-st.markdown(f"## 🎯 Predicted Marks: {score}")
+if user != "":
+    c.execute("SELECT best_score FROM users WHERE username=?", (user,))
+    result = c.fetchone()
 
-st.balloons()
+    if result is not None:
+        current_best = result[0]
+
+        if score > current_best:
+            c.execute(
+                "UPDATE users SET best_score=? WHERE username=?",
+                (score, user)
+            )
+            conn.commit()
+    else:
+        st.error("User not found in database")
+
+
 
 # AI Advice
 st.subheader("🧠 AI Study Advice")
@@ -206,13 +243,24 @@ fig.add_scatter3d(
 st.plotly_chart(fig)
 
 # ------------------- HISTORY -------------------
+user = st.session_state.current_user
+
 st.subheader("📜 Your Prediction History")
 
-if st.session_state.logged_in and st.session_state.current_user != "":
-    st.write(st.session_state.users[st.session_state.current_user]["history"])
-else:
-    st.write("No history yet. Please login.")
+if user != "":
+    c.execute(
+        "SELECT score FROM history WHERE username=? ORDER BY id DESC",
+        (user,)
+    )
+    rows = c.fetchall()
 
+    if rows:
+        scores = [row[0] for row in rows]
+        st.write(scores)
+    else:
+        st.info("No history yet")
+else:
+    st.warning("Please login first")
 
 
     st.markdown("""
@@ -233,17 +281,28 @@ else:
 
     st.subheader("🏆 Leaderboard")
 
+c.execute("""
+CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    score INTEGER
+)
+""")
+conn.commit()
+
+c.execute(
+    "INSERT INTO history (username, score) VALUES (?, ?)",
+    (st.session_state.current_user, int(prediction[0]))
+)
+conn.commit()
+
 # Collect users and scores
-leaderboard = []
+st.subheader("🏆 Leaderboard")
 
-for user, data in st.session_state.users.items():
-    leaderboard.append((user, data["best_score"]))
+c.execute("SELECT username, best_score FROM users ORDER BY best_score DESC")
+data = c.fetchall()
 
-# Sort by score (highest first)
-leaderboard = sorted(leaderboard, key=lambda x: x[1], reverse=True)
-
-# Display
-for i, (user, score) in enumerate(leaderboard[:5], start=1):
+for i, (user, score) in enumerate(data[:5], start=1):
     if i == 1:
         st.write(f"🥇 {user} — {score}")
     elif i == 2:
@@ -252,3 +311,37 @@ for i, (user, score) in enumerate(leaderboard[:5], start=1):
         st.write(f"🥉 {user} — {score}")
     else:
         st.write(f"{i}. {user} — {score}")
+
+
+        st.markdown(f"""
+### 🎯 Your Score: {score}
+
+📊 Rank: Top {100 - score}% students  
+🔥 Performance Level: {'Elite' if score > 85 else 'Average' if score > 60 else 'Needs Work'}
+
+📢 Share this with your friends and compare!
+""")
+
+
+
+
+target = st.slider("🎯 Beat this score challenge", 50, 100, 80)
+
+if score > target:
+    st.success("🔥 You beat the challenge! Share this win 💪")
+else:
+    st.warning("😈 Try again and beat the challenge")
+
+
+    st.subheader("🏆 Top Performers")
+
+c.execute("SELECT username, best_score FROM users ORDER BY best_score DESC LIMIT 5")
+top_users = c.fetchall()
+
+for i, user in enumerate(top_users, 1):
+    st.write(f"{i}. {user[0]} — {user[1]} marks")
+
+
+    st.info("📸 Screenshot your score and share on WhatsApp/Instagram!")
+
+st.info("👥 Compare your score with friends and see who studies smarter!")
